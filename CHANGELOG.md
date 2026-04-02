@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.8.2] - 2026-04-02
+
+### Fixed
+- **Critical module loading** — Fixed missing `js/widgets/index.js` and `js/editor/widgets.js` entry files after v0.8.1 module splitting, resolving 404 errors that prevented editor from loading — fixes [#24](https://github.com/Curbob/LobsterBoard/issues/24)
+
+### Technical  
+- Added widget registry initialization module (`js/widgets/index.js`)
+- Added editor widget library functionality (`js/editor/widgets.js`)
+- Ensures clean git clone + `npm install` + `node server.cjs` works without errors
+
+## [0.8.1] - 2026-03-29
+
+### Fixed
+- **Module organization** — Split monolithic files into focused modules for better maintainability
+
 ## [0.8.0] - 2026-03-24
 
 ### Added
