@@ -9,3 +9,4 @@ node_modules/
 # Security - never commit
 auth.json
 secrets.json
+.claude/
