@@ -151,7 +151,10 @@
     const widgetContent = window.processWidgetHtml(template.generateHtml(props), widget.properties.showHeader);
     el.querySelector('.widget-render').innerHTML = widgetContent;
 
-    // Execute widget JS if available
+    canvas.appendChild(el);
+    window.applyWidgetFontScale(widget);
+
+    // Execute widget JS after HTML is in the DOM
     if (template.generateJs) {
       try {
         eval('(function() { var widget = arguments[0]; ' + template.generateJs(props) + ' })')(widget);
@@ -159,9 +162,6 @@
         console.error(`Widget ${widget.id} JS error:`, e);
       }
     }
-
-    canvas.appendChild(el);
-    window.applyWidgetFontScale(widget);
   };
 
   window.selectWidget = function selectWidget(id) {
