@@ -291,4 +291,19 @@
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseup', onUp);
   };
+
+  window.deleteWidget = function deleteWidget(id) {
+    const idx = state.widgets.findIndex(w => w.id === id);
+    if (idx === -1) return;
+
+    state.widgets.splice(idx, 1);
+    document.getElementById(id)?.remove();
+    window.selectWidget(null);
+    window.updateCanvasInfo();
+    window.updateEmptyState();
+
+    if (state.widgets.length === 0) {
+      document.getElementById('canvas').classList.remove('has-widgets');
+    }
+  };
 })();
