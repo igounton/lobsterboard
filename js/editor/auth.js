@@ -310,7 +310,7 @@
     state.widgets.forEach(function(widget) {
       var template = WIDGETS[widget.type];
       if (!template || !template.generateJs) return;
-      var props = sanitizeProps(Object.assign({}, widget.properties, { id: 'preview-' + widget.id }));
+      var props = sanitizeProps(Object.assign({}, widget.properties, { id: widget.id }));
       try {
         var js = template.generateJs(props);
         new Function(js)();
