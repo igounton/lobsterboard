@@ -258,8 +258,16 @@
     state.widgets.forEach(function(widget) {
       var el = document.getElementById(widget.id);
       if (el) {
-        el.querySelector('.widget-render').style.pointerEvents = enable ? 'none' : 'auto';
-        el.querySelector('.resize-handle').style.display = enable ? 'block' : 'none';
+        var widgetRender = el.querySelector('.widget-render');
+        var resizeHandle = el.querySelector('.resize-handle');
+        
+        if (widgetRender) {
+          widgetRender.style.pointerEvents = enable ? 'none' : 'auto';
+        }
+        if (resizeHandle) {
+          resizeHandle.style.display = enable ? 'block' : 'none';
+        }
+        
         if (enable) {
           el.style.cursor = 'move';
           el.classList.add('builder-edit-mode');
