@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.8.3] - 2026-04-02
+
+### Fixed
+- **Widget interaction** — Restored missing click-to-select, drag-to-move, and resize functionality lost in module splitting — fixes [#24](https://github.com/Curbob/LobsterBoard/issues/24)
+- **Widget deletion** — Fixed non-functional delete button in properties panel by adding missing `deleteWidget()` function
+- **JavaScript execution** — Fixed widget scripts not running by correcting DOM element ID matching (`widget-X` vs `preview-widget-X`)
+- **Edit mode controls** — Fixed "Done" button and edit mode state management after module refactoring
+
+### Technical
+- Added complete widget event system (click, mousedown, resize handles)
+- Added `startDragWidget()` and `startResizeWidget()` functions with grid snapping
+- Added `deleteWidget()` function with proper state cleanup
+- Fixed widget script execution timing and element targeting
+- Restored full editor interactivity matching pre-0.8.1 functionality
+
 ## [0.8.2] - 2026-04-02
 
 ### Fixed
