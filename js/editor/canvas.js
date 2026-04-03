@@ -146,13 +146,37 @@
     el.style.position = 'absolute';
 
     // Widget content and wrapper
-    el.innerHTML = '<div class="widget-render"></div>';
+    el.innerHTML = '<div class="widget-render"></div><div class="resize-handle"></div>';
     const props = { ...widget.properties, id: widget.id };
     const widgetContent = window.processWidgetHtml(template.generateHtml(props), widget.properties.showHeader);
     el.querySelector('.widget-render').innerHTML = widgetContent;
 
     canvas.appendChild(el);
     window.applyWidgetFontScale(widget);
+
+    // Add click event listener for selection
+    el.addEventListener('click', function(e) {
+      if (!state.editMode) return;
+      e.stopPropagation();
+      window.selectWidget(widget.id);
+    });
+
+    // Add drag event listener
+    el.addEventListener('mousedown', function(e) {
+      if (!state.editMode) return;
+      if (e.target.classList.contains('resize-handle')) return;
+      window.startDragWidget(e, widget);
+    });
+
+    // Add resize handle event listener
+    const resizeHandle = el.querySelector('.resize-handle');
+    if (resizeHandle) {
+      resizeHandle.addEventListener('mousedown', function(e) {
+        if (!state.editMode) return;
+        e.stopPropagation();
+        window.startResizeWidget(e, widget);
+      });
+    }
 
     // Execute widget JS after HTML is in the DOM
     if (template.generateJs) {
@@ -178,5 +202,93 @@
     } else {
       window.hideProperties();
     }
+  };
+
+  window.startDragWidget = function startDragWidget(e, widget) {
+    if (e.button !== 0) return;
+
+    const el = document.getElementById(widget.id);
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const origX = widget.x;
+    const origY = widget.y;
+
+    function onMove(e) {
+      const dx = (e.clientX - startX) / state.zoom;
+      const dy = (e.clientY - startY) / state.zoom;
+
+      widget.x = Math.round((origX + dx) / 20) * 20;
+      widget.y = Math.round((origY + dy) / 20) * 20;
+
+      // Keep in bounds
+      widget.x = Math.max(0, Math.min(widget.x, state.canvas.width - widget.width));
+      if (window.isScrollableMode && window.isScrollableMode()) {
+        widget.y = Math.max(0, widget.y);
+      } else {
+        widget.y = Math.max(0, Math.min(widget.y, state.canvas.height - widget.height));
+      }
+
+      el.style.left = widget.x + 'px';
+      el.style.top = widget.y + 'px';
+
+      // In scrollable mode, grow canvas to fit
+      if (window.isScrollableMode && window.isScrollableMode()) {
+        window.updateCanvasSize(true);
+      }
+
+      window.updatePropertyInputs();
+    }
+
+    function onUp() {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    }
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  };
+
+  window.startResizeWidget = function startResizeWidget(e, widget) {
+    const el = document.getElementById(widget.id);
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const origW = widget.width;
+    const origH = widget.height;
+
+    function onMove(e) {
+      const dw = (e.clientX - startX) / state.zoom;
+      const dh = (e.clientY - startY) / state.zoom;
+
+      widget.width = Math.round((origW + dw) / 20) * 20;
+      widget.height = Math.round((origH + dh) / 20) * 20;
+
+      // Minimum size
+      widget.width = Math.max(100, widget.width);
+      widget.height = Math.max(60, widget.height);
+
+      // Keep in bounds
+      widget.width = Math.min(widget.width, state.canvas.width - widget.x);
+      if (!window.isScrollableMode || !window.isScrollableMode()) {
+        widget.height = Math.min(widget.height, state.canvas.height - widget.y);
+      }
+
+      el.style.width = widget.width + 'px';
+      el.style.height = widget.height + 'px';
+
+      // In scrollable mode, grow canvas to fit
+      if (window.isScrollableMode && window.isScrollableMode()) {
+        window.updateCanvasSize(true);
+      }
+
+      window.updatePropertyInputs();
+    }
+
+    function onUp() {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    }
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
   };
 })();
