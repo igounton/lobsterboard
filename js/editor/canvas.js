@@ -115,4 +115,68 @@
   window.addEventListener('resize', function() {
     if (!state.editMode) scaleCanvasToFit();
   });
+
+  // ─────────────────────────────────────────────
+  // WIDGET RENDERING AND SELECTION
+  // ─────────────────────────────────────────────
+
+  window.renderWidget = function renderWidget(widget) {
+    const template = WIDGETS[widget.type];
+    if (!template) {
+      console.warn(`renderWidget: unknown widget type "${widget.type}" (${widget.id}), skipping`);
+      return;
+    }
+    const canvas = document.getElementById('canvas');
+
+    const el = document.createElement('div');
+    el.className = 'placed-widget';
+    el.dataset.type = widget.type;
+    if (widget.type === 'text-header') {
+      el.dataset.showBorder = widget.properties.showBorder ? 'true' : 'false';
+    }
+    if (widget.type === 'pages-menu' && widget.properties.showBorder === false) {
+      el.dataset.showBorder = 'false';
+    }
+
+    el.id = widget.id;
+    el.style.left = widget.x + 'px';
+    el.style.top = widget.y + 'px';
+    el.style.width = widget.width + 'px';
+    el.style.height = widget.height + 'px';
+    el.style.position = 'absolute';
+
+    // Widget content and wrapper
+    el.innerHTML = '<div class="widget-render"></div>';
+    const props = { ...widget.properties, id: widget.id };
+    const widgetContent = window.processWidgetHtml(template.generateHtml(props), widget.properties.showHeader);
+    el.querySelector('.widget-render').innerHTML = widgetContent;
+
+    // Execute widget JS if available
+    if (template.generateJs) {
+      try {
+        eval('(function() { var widget = arguments[0]; ' + template.generateJs(props) + ' })')(widget);
+      } catch (e) {
+        console.error(`Widget ${widget.id} JS error:`, e);
+      }
+    }
+
+    canvas.appendChild(el);
+    window.applyWidgetFontScale(widget);
+  };
+
+  window.selectWidget = function selectWidget(id) {
+    // Deselect previous
+    document.querySelectorAll('.placed-widget.selected').forEach(el => {
+      el.classList.remove('selected');
+    });
+
+    state.selectedWidget = id ? state.widgets.find(w => w.id === id) : null;
+
+    if (state.selectedWidget) {
+      document.getElementById(id).classList.add('selected');
+      window.showProperties(state.selectedWidget);
+    } else {
+      window.hideProperties();
+    }
+  };
 })();

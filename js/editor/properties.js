@@ -742,4 +742,34 @@
   }
 
   window.onPropertyChange = onPropertyChange;
+
+  // ─────────────────────────────────────────────
+  // WIDGET FONT SCALING
+  // ─────────────────────────────────────────────
+
+  window.applyWidgetFontScale = function applyWidgetFontScale(widget) {
+    const el = document.getElementById(widget.id);
+    if (!el) return;
+    const body = el.querySelector('.dash-card-body');
+    const render = el.querySelector('.widget-render');
+    const adjustment = widget.properties.widgetFontAdjust || 0; // e.g. -25, -10, 0, +10, +25
+    if (adjustment !== 0) {
+      // Compute effective scale: global + adjustment (additive percentage points)
+      const globalScale = state.fontScale || 1;
+      const effectiveScale = globalScale + (adjustment / 100);
+      // Set --font-scale override on widget body content only (header stays at global)
+      const target = body || render;
+      if (target) {
+        target.style.setProperty('--font-scale', effectiveScale);
+        target.style.fontSize = (effectiveScale * 100) + '%';
+      }
+    } else {
+      // No adjustment — inherit global
+      const target = body || render;
+      if (target) {
+        target.style.removeProperty('--font-scale');
+        target.style.removeProperty('font-size');
+      }
+    }
+  };
 })();
