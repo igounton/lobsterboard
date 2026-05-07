@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.8.6] - 2026-05-06
+
+### Fixed
+- **Search widget restored** — reinstated the PR27 Search widget in the picker with DuckDuckGo-style `!bangs`, keyboard focus shortcut, and query recall
+- **Finance widgets restored** — reinstated the PR27 Stock Ticker and Crypto Price widgets plus their server-side finance routes
+- **npm package contents** — ensured the published package includes required runtime server files and restored PR27 widget assets
+- **Remote stats cleanup** — improved remote stats poller teardown to avoid stale pollers and overlapping requests
+
 ## [0.8.5] - 2026-05-06
 
 ### Fixed
