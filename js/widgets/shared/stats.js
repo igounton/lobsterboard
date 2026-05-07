@@ -32,6 +32,14 @@ function onSystemStats(callback) {
 // ─────────────────────────────────────────────
 const _remotePollers = {}; // serverId -> { interval, callbacks, lastData, errors, lastSuccess }
 
+function _teardownRemotePoller(serverId) {
+  const poller = _remotePollers[serverId];
+  if (!poller) return;
+  if (poller.interval) clearInterval(poller.interval);
+  if (poller.abortController) poller.abortController.abort();
+  delete _remotePollers[serverId];
+}
+
 function onRemoteStats(serverId, callback, refreshMs = 10000) {
   if (!_remotePollers[serverId]) {
     _remotePollers[serverId] = {
@@ -40,15 +48,22 @@ function onRemoteStats(serverId, callback, refreshMs = 10000) {
       lastData: null,
       errors: 0,
       lastSuccess: null,
-      offline: false
+      offline: false,
+      abortController: null,
+      polling: false
     };
 
     const poll = async () => {
       const poller = _remotePollers[serverId];
+      if (!poller || poller.polling) return;
+      poller.polling = true;
+      poller.abortController = typeof AbortController !== 'undefined' ? new AbortController() : null;
+      const timeoutId = poller.abortController
+        ? setTimeout(() => poller.abortController && poller.abortController.abort(), 10000)
+        : null;
       try {
-        const res = await fetch(`/api/servers/${serverId}/stats`, {
-          signal: AbortSignal.timeout(10000) // 10s timeout
-        });
+        const fetchOptions = poller.abortController ? { signal: poller.abortController.signal } : {};
+        const res = await fetch(`/api/servers/${serverId}/stats`, fetchOptions);
         if (res.ok) {
           const data = await res.json();
           const normalized = _normalizeRemoteStats(data);
@@ -56,15 +71,23 @@ function onRemoteStats(serverId, callback, refreshMs = 10000) {
           poller.errors = 0;
           poller.lastSuccess = Date.now();
           poller.offline = false;
-          poller.callbacks.forEach(cb => cb(normalized));
+          poller.callbacks = poller.callbacks.filter(cb => {
+            if (cb && cb.isConnected === false) return false;
+            cb(normalized);
+            return true;
+          });
+          if (poller.callbacks.length === 0) {
+            _teardownRemotePoller(serverId);
+            return;
+          }
         } else {
           throw new Error(`HTTP ${res.status}`);
         }
       } catch (e) {
+        if (!_remotePollers[serverId]) return;
         poller.errors++;
         console.warn(`Remote stats error (${serverId}, attempt ${poller.errors}):`, e.message);
 
-        // After 3 consecutive failures, mark as offline and notify widgets
         if (poller.errors >= 3 && !poller.offline) {
           poller.offline = true;
           const offlineData = {
@@ -73,7 +96,21 @@ function onRemoteStats(serverId, callback, refreshMs = 10000) {
             _lastSuccess: poller.lastSuccess,
             _serverId: serverId
           };
-          poller.callbacks.forEach(cb => cb(offlineData));
+          poller.callbacks = poller.callbacks.filter(cb => {
+            if (cb && cb.isConnected === false) return false;
+            cb(offlineData);
+            return true;
+          });
+          if (poller.callbacks.length === 0) {
+            _teardownRemotePoller(serverId);
+            return;
+          }
+        }
+      } finally {
+        if (timeoutId) clearTimeout(timeoutId);
+        if (_remotePollers[serverId]) {
+          _remotePollers[serverId].polling = false;
+          _remotePollers[serverId].abortController = null;
         }
       }
     };
@@ -84,7 +121,6 @@ function onRemoteStats(serverId, callback, refreshMs = 10000) {
 
   _remotePollers[serverId].callbacks.push(callback);
 
-  // If we have cached data, call immediately
   if (_remotePollers[serverId].lastData) {
     callback(_remotePollers[serverId].lastData);
   }
