@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.8.5] - 2026-05-06
+
+### Fixed
+- **npm package contents** — restored missing `server/` runtime files in the published package so `npx lobsterboard` and `node server.cjs` no longer crash with `Cannot find module './server/config.cjs'`
+
 ## [0.8.3] - 2026-04-02
 
 ### Fixed
